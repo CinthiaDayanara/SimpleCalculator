@@ -29,4 +29,4 @@ Follow these steps to clone and run the project locally:
 Open a terminal or command prompt and run the following command to clone the repository:
 
 ```bash
-git clone https://github.com/your-username/simple-calculator.git
+https://github.com/CinthiaDayanara/SimpleCalculator.git

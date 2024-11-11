@@ -30,3 +30,10 @@ Open a terminal or command prompt and run the following command to clone the rep
 
 ```bash
 https://github.com/CinthiaDayanara/SimpleCalculator.git
+```
+Once the url of the repository has been copied, we open our visual studio 2022 environment,
+we choose clone repository and paste the url
+We look for the folder where we want to clone and select (the folder must be empty)
+and click clone
+Once started in the environment, 
+we start the project on the green arrow

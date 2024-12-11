@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest  # Usa un contenedor Ubuntu para ejecutar los comandos
+    runs-on: ubuntu-latest  # Usa un contenedor Ubuntu para ejecutar los com
 
     steps:
       - name: Checkout code

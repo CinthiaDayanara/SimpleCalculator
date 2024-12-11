@@ -1,0 +1,46 @@
+name: Deploy to EC2 for QA
+
+on:
+  push:
+    branches:
+      - qa  # Ejecuta el flujo cuando hay un push a la rama 'qa'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Usa un contenedor Ubuntu para ejecutar los comandos
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # Clona el repositorio...
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.5.3  # Configura la clave SSH para conectarse a EC2
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}  # La clave privada SSH almacenada en GitHub Secrets
+
+      - name: Add EC2 host to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST1 }} >> ~/.ssh/known_hosts
+       
+          ssh-keyscan -H ${{ secrets.EC2_HOST2 }} >> ~/.ssh/known_hosts
+           ssh-keyscan -H ${{ secrets.EC2_HOST4 }} >> ~/.ssh/known_hosts
+        env:
+          EC2_IP: ${{ secrets.EC2_HOST }}  # La IP de tu instancia EC2
+
+      - name: Mostrar host de EC2
+        run: |
+            echo "El host de la instancia EC2 es: ${{ secrets.EC2_HOST }}"
+  
+      - name: Deploy to EC2
+        run: |
+          echo "Iniciando despliegue a EC2..."
+          # Copiar los archivos a un directorio temporal donde ec2-user tiene permisos
+          scp -r ./index.html ./script.js ./styles.css ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/
+          # Mover los archivos a /var/www/html usando sudo
+          ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo mv /home/ec2-user/index.html /var/www/html/index.html'
+          ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo mv /home/ec2-user/script.js /var/www/html/script.js'
+          ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo mv /home/ec2-user/styles.css /var/www/html/styles.css'
+          # Asegurarse de que Apache esté ejecutándose y recargando la configuración
+          ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo systemctl restart httpd'

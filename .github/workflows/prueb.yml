@@ -11,7 +11,7 @@ jobs:
     if: github.ref == 'refs/heads/test'
     runs-on: ubuntu-latest
   deploy:
-    runs-on: ubuntu-latest  # Usa un contenedor Ubuntu para ejecutar los comandos
+    runs-on: ubuntu-latest  # Usa un contenedor Ubuntu para ejecutar los coman
 
     steps:
       # Clonar el repositorio

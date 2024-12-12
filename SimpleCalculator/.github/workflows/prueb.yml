@@ -1,45 +1,98 @@
-name: Deploy to EC2 for QA
+name: Deploy to EC2
 
 on:
   push:
     branches:
-      - qa  # Ejecuta el flujo cuando hay un push a la rama 'qa'
+      - qa
+      - master  # Ejecuta el flujo cuando hay un push a la rama 'main'
 
 jobs:
+  deploy-to-test:
+    if: github.ref == 'refs/heads/test'
+    runs-on: ubuntu-latest
   deploy:
-    runs-on: ubuntu-latest  # Usa un contenedor Ubuntu para ejecutar los com
+    runs-on: ubuntu-latest  # Usa un contenedor Ubuntu para ejecutar los comandos
 
     steps:
+      # Clonar el repositorio
       - name: Checkout code
-        uses: actions/checkout@v2  # Clona el repositorio...
+        uses: actions/checkout@v2
 
+      # Configurar clave SSH para la instancia de prueba
+         
       - name: Set up SSH key
         uses: webfactory/ssh-agent@v0.5.3  # Configura la clave SSH para conectarse a EC2
         with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}  # La clave privada SSH almacenada en GitHub Secrets
+          ssh-private-key: ${{ secrets.ec2_SSH_KEY }}
+          
 
-      - name: Add EC2 host to known hosts
+      # Añadir la instancia de prueba a los hosts conocidos
+      - name: Add Test EC2 to known hosts
+      
         run: |
           mkdir -p ~/.ssh
+          # Añadir todas las instancias EC2 a los conocidos
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-          ssh-keyscan -H ${{ secrets.EC2_HOST1 }} >> ~/.ssh/known_hosts
-       
-         
-        env:
-          EC2_IP: ${{ secrets.EC2_HOST }}  # La IP de tu instancia E
-
-      - name: Mostrar host de EC2
-        run: |
-            echo "El host de la instancia EC2 es: ${{ secrets.EC2_HOST }}"
-  
+     
       - name: Deploy to EC2
         run: |
+          echo "Deploying to Test Instance..."
           echo "Iniciando despliegue a EC2..."
           # Copiar los archivos a un directorio temporal donde ec2-user tiene permisos
           scp -r ./index.html ./script.js ./styles.css ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/
+          ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo mv /home/ec2-user/*.html /var/www/html/'
+          ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo mv /home/ec2-user/*.js /var/www/html/'
+          ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo mv /home/ec2-user/*.css /var/www/html/'
           # Mover los archivos a /var/www/html usando sudo
           ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo mv /home/ec2-user/index.html /var/www/html/index.html'
           ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo mv /home/ec2-user/script.js /var/www/html/script.js'
           ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo mv /home/ec2-user/styles.css /var/www/html/styles.css'
           # Asegurarse de que Apache esté ejecutándose y recargando la configuración
           ssh ec2-user@${{ secrets.EC2_HOST }} 'sudo systemctl restart httpd'
+  create-pull-request:
+    if: github.ref == 'refs/heads/test'
+    runs-on: ubuntu-latest
+    steps:
+      # Clonar el repositorio
+      - name: Checkout code
+        uses: actions/checkout@v2
+      # Crear Pull Request desde test a main
+      - name: Create Pull Request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: test
+          destination_branch: main
+          github_token: ${{ secrets.MY_ACCESS_TOKEN }}
+          pr_title: "Pull Request: Deploy Test to Main"
+          pr_body: "This PR deploys the tested changes in `test` to `main`."
+  deploy-to-main:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      # Clonar el repositorio
+      - name: Checkout code
+        uses: actions/checkout@v2
+      # Configurar claves SSH para las instancias de producción
+      - name: Set up SSH key for Production Instances
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.ec2_SSH_KEY }}
+      # Añadir las instancias de producción a los hosts conocidos
+      - name: Add Production EC2 to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST1 }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST2 }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST4 }} >> ~/.ssh/known_hosts
+      # Desplegar a las instancias de producción
+      - name: Deploy to Production Instances
+        run: |
+          for HOST in ${{ secrets.EC2_HOST1 }} ${{ secrets.EC2_HOST2 }} ${{ secrets.EC2_HOST4 }}
+          do
+            echo "Deploying to $HOST..."
+            scp -r ./index.html ./script.js ./styles.css ec2-user@$HOST:/home/ec2-user/
+            ssh ec2-user@$HOST 'sudo mv /home/ec2-user/*.html /var/www/html/'
+            ssh ec2-user@$HOST 'sudo mv /home/ec2-user/*.js /var/www/html/'
+            ssh ec2-user@$HOST 'sudo mv /home/ec2-user/*.css /var/www/html/'
+            ssh ec2-user@$HOST 'sudo systemctl restart httpd'
+          done

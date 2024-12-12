@@ -21,7 +21,7 @@ jobs:
       # Configurar clave SSH para la instancia de prueba
          
       - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.5.3  # Configura la clave SSH para conectarse a EC2
+        uses: webfactory/ssh-agent@v0.5.3  # Configura la clave SSH para conectarse 
         with:
           ssh-private-key: ${{ secrets.ec2_SSH_KEY }}
           

@@ -72,7 +72,7 @@ jobs:
       # Clonar el repositorio
       - name: Checkout code
         uses: actions/checkout@v2
-      # Configurar claves SSH para las instancias de producción
+      # Configurar claves SSH para las instancias de produ
       - name: Set up SSH key for Production Instances
         uses: webfactory/ssh-agent@v0.5.3
         with:

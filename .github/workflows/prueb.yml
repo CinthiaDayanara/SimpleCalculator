@@ -87,7 +87,7 @@ jobs:
       # Desplegar a las instancias de producción
       - name: Deploy to Production Instances
         run: |
-          for HOST in ${{ secrets.EC2_HOST1 }} ${{ secrets.EC2_HOST2 }} ${{ secrets.EC2_HOST4 }}
+          for HOST in ${{ secrets.EC2_HOST }} ${{ secrets.EC2_HOST1 }} ${{ secrets.EC2_HOST4 }}
           do
             echo "Deploying to $HOST..."
             scp -r ./index.html ./script.js ./styles.css ec2-user@$HOST:/home/ec2-user/
